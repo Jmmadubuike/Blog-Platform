@@ -1,10 +1,10 @@
 const Comment = require('../models/Comment');
 const Post = require('../models/Post');
 
-// Add a comment to a post
+// Add a comment to a post (support for nested comments)
 exports.addComment = async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content, parent } = req.body; // Accepting parent ID for nested comments
     const post = await Post.findById(req.params.id);
 
     if (!post) {
@@ -14,7 +14,8 @@ exports.addComment = async (req, res) => {
     const newComment = new Comment({
       content,
       user: req.user.id,
-      post: req.params.id
+      post: req.params.id,
+      parent: parent || null // Set parent if provided
     });
 
     const comment = await newComment.save();
@@ -24,11 +25,31 @@ exports.addComment = async (req, res) => {
   }
 };
 
-// Get all comments for a post
+// Get all comments for a post (including nested comments)
 exports.getCommentsByPostId = async (req, res) => {
   try {
     const comments = await Comment.find({ post: req.params.id }).populate('user', 'username');
-    res.json(comments);
+
+    // Group comments by parent
+    const commentsMap = {};
+    comments.forEach(comment => {
+      const { parent } = comment;
+      if (parent) {
+        if (!commentsMap[parent]) {
+          commentsMap[parent] = [];
+        }
+        commentsMap[parent].push(comment);
+      }
+    });
+
+    // Construct a response structure
+    const topLevelComments = comments.filter(comment => !comment.parent);
+    const response = topLevelComments.map(comment => ({
+      ...comment.toObject(),
+      replies: commentsMap[comment._id] || []
+    }));
+
+    res.json(response);
   } catch (error) {
     res.status(500).json({ error: 'Server error while fetching comments' });
   }
@@ -48,9 +69,10 @@ exports.deleteComment = async (req, res) => {
       return res.status(403).json({ error: 'Not authorized to delete this comment' });
     }
 
-    await comment.remove();
+    await Comment.findByIdAndDelete(req.params.commentId);
     res.json({ message: 'Comment deleted successfully' });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Server error while deleting the comment' });
   }
 };
