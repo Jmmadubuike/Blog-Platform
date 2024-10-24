@@ -7,7 +7,7 @@ const CommentSchema = new mongoose.Schema({
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // Assuming you have a User model
+    ref: 'User',
     required: true
   },
   post: {
@@ -17,7 +17,7 @@ const CommentSchema = new mongoose.Schema({
   },
   parent: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Comment', // Reference to the parent comment if it's a reply
+    ref: 'Comment',
     default: null
   }
 }, { timestamps: true });

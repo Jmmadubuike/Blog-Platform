@@ -1,10 +1,10 @@
 const Comment = require('../models/Comment');
 const Post = require('../models/Post');
 
-// Add a comment to a post (support for nested comments)
+// Add a comment to a post
 exports.addComment = async (req, res) => {
   try {
-    const { content, parent } = req.body; // Accepting parent ID for nested comments
+    const { content, parent } = req.body;
     const post = await Post.findById(req.params.id);
 
     if (!post) {
@@ -15,7 +15,7 @@ exports.addComment = async (req, res) => {
       content,
       user: req.user.id,
       post: req.params.id,
-      parent: parent || null // Set parent if provided
+      parent: parent || null 
     });
 
     const comment = await newComment.save();
@@ -25,7 +25,7 @@ exports.addComment = async (req, res) => {
   }
 };
 
-// Get all comments for a post (including nested comments)
+// Get all comments for a post
 exports.getCommentsByPostId = async (req, res) => {
   try {
     const comments = await Comment.find({ post: req.params.id }).populate('user', 'username');
@@ -42,7 +42,6 @@ exports.getCommentsByPostId = async (req, res) => {
       }
     });
 
-    // Construct a response structure
     const topLevelComments = comments.filter(comment => !comment.parent);
     const response = topLevelComments.map(comment => ({
       ...comment.toObject(),
@@ -55,7 +54,7 @@ exports.getCommentsByPostId = async (req, res) => {
   }
 };
 
-// Delete a comment (only for comment author or admin)
+// Delete a comment
 exports.deleteComment = async (req, res) => {
   try {
     const comment = await Comment.findById(req.params.commentId);
@@ -64,7 +63,6 @@ exports.deleteComment = async (req, res) => {
       return res.status(404).json({ error: 'Comment not found' });
     }
 
-    // Check if the user is the author or an admin
     if (comment.user.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Not authorized to delete this comment' });
     }

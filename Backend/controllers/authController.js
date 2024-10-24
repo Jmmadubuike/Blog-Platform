@@ -7,7 +7,7 @@ exports.registerUser = async (req, res) => {
   const { username, email, password, role } = req.body;
 
   try {
-    // Check if the email already exists
+    
     let user = await User.findOne({ email });
     if (user) {
       return res
@@ -15,22 +15,20 @@ exports.registerUser = async (req, res) => {
         .json({ error: "User with this email already exists" });
     }
 
-    // Hash the password before saving
+    
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create a new user instance
+    // Create a new user
     user = new User({
       username,
       email,
       password: hashedPassword,
-      role: role || "user", // Default role is 'user'
+      role: role || "user",
     });
 
-    // Save user to the database
     await user.save();
 
-    // Generate a JWT token
     const payload = {
       user: {
         id: user.id,
@@ -39,7 +37,7 @@ exports.registerUser = async (req, res) => {
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h", // Token valid for 1 hour
+      expiresIn: "1h",
     });
 
     res.status(201).json({ token });
@@ -53,19 +51,17 @@ exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Check if the user exists
+ 
     let user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ error: "Invalid credentials" });
     }
 
-    // Check if the password matches
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ error: "Invalid credentials" });
     }
 
-    // Generate a JWT token
     const payload = {
       user: {
         id: user.id,
@@ -74,7 +70,7 @@ exports.loginUser = async (req, res) => {
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h", // Token valid for 1 hour
+      expiresIn: "1h",
     });
 
     res.json({ token });
@@ -83,7 +79,7 @@ exports.loginUser = async (req, res) => {
   }
 };
 
-// Get logged-in user profile (protected route)
+// Get logged-in user profile
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
